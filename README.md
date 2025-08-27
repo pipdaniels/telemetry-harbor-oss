@@ -41,7 +41,7 @@ docker compose up -d
 ```
 
 Once started:
-*   **API available at** → `http://localhost:8000/api/v1`
+*   **API available at** → `http://localhost:8000/api/v2`
 *   **Grafana available at** → `http://localhost:3000` (default: `admin` / `StrongAdminPassword!`)
 
 
@@ -72,12 +72,12 @@ Replace Telemetry Harbor Cloud URLs with your own domain, omitting the harbor ID
 
 ### Single Data Push
 ```
-POST http://yourdomain.com/api/v1/ingest/
+POST http://yourdomain.com/api/v2/ingest/
 ```
 
 ### Batch Data Push  
 ```
-POST http://yourdomain.com/api/v1/ingest/batch
+POST http://yourdomain.com/api/v2/ingest/batch
 ```
 
 Both endpoints require the API key set via the `X-API-Key` header.
@@ -86,7 +86,7 @@ Both endpoints require the API key set via the `X-API-Key` header.
 
 **Single Data Point:**
 ```bash
-curl -X POST "http://localhost:8000/api/v1/ingest/" \
+curl -X POST "http://localhost:8000/api/v2/ingest/" \
 -H "X-API-Key: your_api_key_here" \
 -H "Content-Type: application/json" \
 -d '{
@@ -99,7 +99,7 @@ curl -X POST "http://localhost:8000/api/v1/ingest/" \
 
 **Batch Data:**
 ```bash
-curl -X POST "http://localhost:8000/api/v1/ingest/batch" \
+curl -X POST "http://localhost:8000/api/v2/ingest/batch" \
 -H "X-API-Key: your_api_key_here" \
 -H "Content-Type: application/json" \
 -d '[
