@@ -60,7 +60,7 @@ func main() {
 	})
 
 	// --- ROUTING ---
-	apiv1 := app.Group("/api/v1")
+	apiv1 := app.Group("/api/v2")
 
 	// Define the shared middleware chain for ingest routes.
 	ingestChain := []fiber.Handler{
