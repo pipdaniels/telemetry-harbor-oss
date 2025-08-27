@@ -1,0 +1,81 @@
+# This workflow builds and pushes two separate Docker images (backend and worker)
+# from a single multi-target Dockerfile to the GitHub Container Registry (ghcr.io).
+
+name: Docker Build and Push
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
+
+env:
+  REGISTRY: ghcr.io
+  # Define separate image names for backend and worker
+  BACKEND_IMAGE_NAME: ${{ github.repository }}-backend
+  WORKER_IMAGE_NAME: ${{ github.repository }}-worker
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+
+      - name: Log in to the GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # This step reads the version from a file named 'VERSION' in your repo root
+      - name: Get version from file and set lowercase image names
+        id: get_version
+        run: |
+          VERSION=$(cat VERSION)
+          MAJOR_VERSION=$(echo $VERSION | cut -d. -f1)
+          MINOR_VERSION=$(echo $VERSION | cut -d. -f1,2)
+          LOWERCASE_BACKEND_IMAGE_NAME=$(echo ${{ env.BACKEND_IMAGE_NAME }} | tr '[:upper:]' '[:lower:]')
+          LOWERCASE_WORKER_IMAGE_NAME=$(echo ${{ env.WORKER_IMAGE_NAME }} | tr '[:upper:]' '[:lower:]')
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "MAJOR_VERSION=${MAJOR_VERSION}" >> $GITHUB_ENV
+          echo "MINOR_VERSION=${MINOR_VERSION}" >> $GITHUB_ENV
+          echo "LOWERCASE_BACKEND_IMAGE_NAME=${LOWERCASE_BACKEND_IMAGE_NAME}" >> $GITHUB_ENV
+          echo "LOWERCASE_WORKER_IMAGE_NAME=${LOWERCASE_WORKER_IMAGE_NAME}" >> $GITHUB_ENV
+
+      - name: Build and push Backend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          # The 'target' key tells Docker to build the 'api' stage from the Dockerfile
+          target: api
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.LOWERCASE_BACKEND_IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.LOWERCASE_BACKEND_IMAGE_NAME }}:${{ env.VERSION }}
+            ${{ env.REGISTRY }}/${{ env.LOWERCASE_BACKEND_IMAGE_NAME }}:${{ env.MINOR_VERSION }}
+            ${{ env.REGISTRY }}/${{ env.LOWERCASE_BACKEND_IMAGE_NAME }}:${{ env.MAJOR_VERSION }}
+            ${{ env.REGISTRY }}/${{ env.LOWERCASE_BACKEND_IMAGE_NAME }}:latest
+
+      - name: Build and push Worker Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          # The 'target' key tells Docker to build the 'worker' stage from the Dockerfile
+          target: worker
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.LOWERCASE_WORKER_IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.LOWERCASE_WORKER_IMAGE_NAME }}:${{ env.VERSION }}
+            ${{ env.REGISTRY }}/${{ env.LOWERCASE_WORKER_IMAGE_NAME }}:${{ env.MINOR_VERSION }}
+            ${{ env.REGISTRY }}/${{ env.LOWERCASE_WORKER_IMAGE_NAME }}:${{ env.MAJOR_VERSION }}
+            ${{ env.REGISTRY }}/${{ env.LOWERCASE_WORKER_IMAGE_NAME }}:latest

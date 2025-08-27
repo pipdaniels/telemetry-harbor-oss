@@ -1,0 +1,152 @@
+# ===================================================================================
+# == WARNING: THIS FILE CONTAINS DEFAULT CREDENTIALS.                              ==
+# ==                                                                               ==
+# == Before using in a production or sensitive environment, you MUST change all    ==
+# == placeholder passwords and keys marked with "# <-- CHANGE ME!".                ==
+# ===================================================================================
+version: "3.9"
+
+services:
+  db:
+    image: timescale/timescaledb:latest-pg16 # Pinned version for stability
+    container_name: telemetry_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword # <-- CHANGE ME!
+      POSTGRES_DB: telemetry
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql # For initial setup
+      - postgres_data:/var/lib/postgresql/data # Named volume for data persistence
+    networks:
+      - telemetry-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 5
+      timeout: 5s
+    # No ports exposed to the host machine for better security.
+    # Services communicate over the internal 'telemetry-net' network.
+
+  redis:
+    image: redis:7.2-alpine # Pinned version for stability
+    container_name: telemetry_redis
+    restart: unless-stopped
+    command: redis-server --requirepass MyRedisP@ssw0rd # <-- CHANGE ME!
+    volumes:
+      - redis_data:/data # Named volume for data persistence
+    networks:
+      - telemetry-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "MyRedisP@ssw0rd", "ping"] # <-- Must match the password above
+      interval: 5s
+      retries: 5
+      timeout: 5s
+
+  api:
+    build:
+      context: .
+      target: api
+    container_name: telemetry_api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # --- General ---
+      APP_ENV: production
+      PORT: "8000"
+      API_KEY: "change-this-secret-api-key" # <-- CHANGE ME!
+
+      # --- Database Connection ---
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: mysecretpassword # <-- Must match the db password
+      DATABASE_HOST: db # Use the service name for inter-container communication
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: telemetry
+
+      # --- Redis Connection ---
+      REDIS_HOST: redis # Use the service name
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: "MyRedisP@ssw0rd" # <-- Must match the redis password
+
+      # --- Worker Queue Config ---
+      INGEST_QUEUE_NAME: ingest_queue
+
+    ports:
+      - "8000:8000"
+    networks:
+      - telemetry-net
+
+  worker:
+    build:
+      context: .
+      target: worker
+    container_name: telemetry_worker
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # --- General ---
+      APP_ENV: production
+
+      # --- Database Connection ---
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: mysecretpassword # <-- Must match the db password
+      DATABASE_HOST: db
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: telemetry
+
+      # --- Redis Connection ---
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: "MyRedisP@ssw0rd" # <-- Must match the redis password
+
+      # --- Worker Config ---
+      INGEST_QUEUE_NAME: ingest_queue
+      WORKER_BATCH_SIZE: "1000"
+      WORKER_POLL_INTERVAL_MS: "1000"
+    networks:
+      - telemetry-net
+
+  grafana:
+    image: grafana/grafana:10.4.2 # Pinned version for stability
+    container_name: telemetry_grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # --- Grafana Admin User ---
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: StrongAdminPassword! # <-- CHANGE ME!
+
+      # --- Grafana Configuration ---
+      GF_USERS_ALLOW_SIGN_UP: "false"
+
+      # --- Datasource Provisioning Variables ---
+      # These are passed to the datasource.yml file below
+      GF_DATASOURCE_USER: postgres
+      GF_DATASOURCE_PASSWORD: mysecretpassword # <-- Must match the db password
+      GF_DATASOURCE_DB: telemetry
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning # Mount provisioning files
+      - grafana_data:/var/lib/grafana # Named volume for persistence
+    networks:
+      - telemetry-net
+    depends_on:
+      - db
+
+# Define top-level resources used by the services above
+volumes:
+  postgres_data:
+  redis_data:
+  grafana_data:
+
+networks:
+  telemetry-net:
+    driver: bridge

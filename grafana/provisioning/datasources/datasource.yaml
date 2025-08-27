@@ -1,0 +1,23 @@
+apiVersion: 1
+datasources:
+  - name: "TelemetryPostgres"
+    type: postgres
+    access: proxy
+    url: db:5432
+    database: telemetry
+    user: ${GF_DATASOURCE_USER}
+    secureJsonData:
+      password: ${GF_DATASOURCE_PASSWORD}
+    basicAuth: false
+    isDefault: true
+    readOnly: true
+    jsonData:
+      connMaxLifetime: 14400
+      database: ${GF_DATASOURCE_DB}
+      maxIdleConns: 100
+      maxIdleConnsAuto: true
+      maxOpenConns: 100
+      postgresVersion: 1600
+      sslmode: disable
+      timescaledb: true
+    editable: false
