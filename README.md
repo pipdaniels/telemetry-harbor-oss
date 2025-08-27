@@ -24,7 +24,7 @@ docker compose up -d
 
 Once started:
 
-* API available at → `http://localhost:8000/api/v1`
+* API available at → `http://localhost:8000/api/v2`
 * Grafana available at → `http://localhost:3000` (default: `admin / StrongAdminPassword!`)
 
 ---
@@ -50,13 +50,13 @@ Replace Telemetry Harbor Cloud URLs with your own domain omitting harbor id.
 ### Single Data Push
 
 ```http
-POST https://yourdomain.com/api/v1/ingest/
+POST https://yourdomain.com/api/v2/ingest/
 ```
 
 ### Batch Data Push
 
 ```http
-POST https://yourdomain.com/api/v1/ingest/batch
+POST https://yourdomain.com/api/v2/ingest/batch
 ```
 
 Both require the **API key** set via environment variable (`API_KEY`).
