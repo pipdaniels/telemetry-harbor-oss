@@ -63,6 +63,14 @@ Both require the **API key** set via environment variable (`API_KEY`).
 
 ---
 
+
+## 🗄️ Data Retention
+
+By default, your telemetry data is kept for **365 days**.  
+Want a different retention period? Just tweak it in [`init.sql`](https://github.com/TelemetryHarbor/telemetry-harbor-oss/blob/main/init.sql) before starting the stack.
+
+---
+
 ## 📊 Visualization
 
 Grafana comes pre-configured with:
