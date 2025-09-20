@@ -1,0 +1,35 @@
+.env
+!.env.example
+# Ignore environment variable files
+*.log
+*.tmp
+# Ignore log files and temporary files
+*.bak
+# Ignore backup files
+*.swp
+# Ignore swap files
+.DS_Store
+# Ignore macOS specific files
+node_modules/
+# Ignore Node.js dependencies
+dist/
+# Ignore build output directory
+coverage/
+# Ignore test coverage reports
+.vscode/
+
+# Ignore golang build files
+*.o
+*.exe
+*.out
+*.test
+# Ignore Go binaries and object files
+*.so
+# Ignore shared object files
+*.a
+# Ignore static libraries
+*.dSYM/
+# Ignore macOS debug symbols
+*.pyc
+# Ignore Python bytecode files
+__pycache__/
